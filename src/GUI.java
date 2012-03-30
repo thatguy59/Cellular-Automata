@@ -675,6 +675,16 @@ public class GUI {
 				ans = new Color(0x0F0F0F);
 		}
 		if (colorScheme == 4) {
+			int bgcolor = Color.DARK_GRAY.getRGB();
+			int bggreen = Color.DARK_GRAY.getGreen();
+			int n = eng.getNoOfColors();
+			if (c > n || c < 0 || n < 2) {
+				return Color.RED; // Return red for anything outside the spectrum or
+									// an invalid spectrum
+			}
+			ans = new Color(bgcolor +(255-bggreen) / (n - 1) * c * 0x000100);
+		}
+		/*if (colorScheme == 4) {
 			if (c == 0)
 				ans = Color.DARK_GRAY;
 			if (c == 1)
@@ -683,24 +693,8 @@ public class GUI {
 				ans = Color.MAGENTA;
 			if (c == 3)
 				ans = Color.YELLOW;
-		}
+		}*/
 		return ans;
-	}
-
-	/**
-	 * @param c
-	 *            The number position in the spectrum to get, lower value gives
-	 *            darker color.
-	 * @param n
-	 *            The width of the spectrum.
-	 * @return A color between black and bright green.
-	 */
-	public Color getColorSchemeColor(int c, int n) {
-		if (c > n || c < 0 || n < 2) {
-			return Color.RED; // Return red for anything outside the spectrum or
-								// an invalid spectrum
-		}
-		return new Color(255 / (n - 1) * c * 0x000100);
 	}
 
 	public static int roundToBetterNumber(int a, int b) {
