@@ -9,6 +9,7 @@ public class ColorGradient {
 	private int intervals = 0; 
 	private int gradients = 0;
 	private boolean discontinous = false;//If true, replaces color of c=0 with colorZero
+	private Color[] colorTable;
 	
 	/*
 	 * Default constructor makes it a 24 color rainbow
@@ -91,6 +92,13 @@ public class ColorGradient {
 			
 			return new Color(r,g,b);
 
+		}
+	}
+	
+	public void makeTable() {
+		this.colorTable = new Color[intervals*gradients];
+		for (int i = 0; i <= intervals*gradients; i++) {
+			
 		}
 	}
 }
