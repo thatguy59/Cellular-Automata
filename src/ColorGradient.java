@@ -4,12 +4,15 @@ import java.util.ArrayList;
 
 public class ColorGradient {
 
+	final private Color DEFAULT_COLOR = Color.RED; 
+	
 	private ArrayList<Color> colors = new ArrayList<Color>();
 	private Color colorZero;
 	private int intervals = 0; 
 	private int gradients = 0;
 	private boolean discontinous = false;//If true, replaces color of c=0 with colorZero
 	private Color[] colorTable;
+	private int tableMax;
 	
 	/*
 	 * Default constructor makes it a 24 color rainbow
@@ -76,7 +79,7 @@ public class ColorGradient {
 		if (discontinous && c == 0) {
 			return colorZero;
 		}else if (c > intervals*gradients || c < 0) {
-			return Color.RED;
+			return DEFAULT_COLOR;
 		}else if (interval == intervals) {
 			return colors.get(intervals);
 		}else {
@@ -96,9 +99,17 @@ public class ColorGradient {
 	}
 	
 	public void makeTable() {
-		this.colorTable = new Color[intervals*gradients];
+		this.colorTable = new Color[intervals*gradients+1];
 		for (int i = 0; i <= intervals*gradients; i++) {
-			
+			this.colorTable[i] = getColor(i);
+		}
+		this.tableMax = intervals*gradients;
+	}
+	public Color getTableColor(int c) {
+		if (c >= tableMax || c < 0) {
+			return DEFAULT_COLOR;
+		}else {
+			return colorTable[c];
 		}
 	}
 }
