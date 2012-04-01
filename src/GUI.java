@@ -30,6 +30,7 @@ import javax.swing.JComboBox;
 import javax.swing.JTextField;
 import javax.swing.JSpinner;
 import javax.swing.JLabel;
+import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
@@ -42,14 +43,24 @@ import javax.swing.JRadioButton;
 import java.awt.Rectangle;
 import java.awt.Dimension;
 import java.util.ArrayList;
+import java.util.Locale;
 
 import javax.swing.event.ChangeListener;
 import javax.swing.event.ChangeEvent;
+import javax.swing.border.BevelBorder;
+import javax.swing.border.CompoundBorder;
+import javax.swing.border.EtchedBorder;
+import javax.swing.border.MatteBorder;
+import javax.swing.border.SoftBevelBorder;
+import javax.swing.border.TitledBorder;
+import javax.swing.JProgressBar;
+import javax.swing.border.EmptyBorder;
 
 public class GUI {
-
+	
 	public static final int GRID_SIZE_IN_PIXELS = 640;
 	public static final int INITIAL_DIMENSION = 160;
+	final static String LOOKANDFEEL = "System";
 	private Engine eng;
 	private JFrame frame;
 	private JTextField dimensionTF;
@@ -59,17 +70,45 @@ public class GUI {
 	private int generation = 0;
 	private int colorScheme = 1;
 	private JTextField textField;
+	private JSlider slider;
+	private JProgressBar progressBar;
+	
+	/* I could find no better place to put this */
+	private ColorGradient colorGradient;
+	private ColorGradient rainbow;
 
 	/*
 	 * Create the application.
 	 */
 	public GUI(Engine eng) {
+		/*This part is for setting the gradient, I did not know where to put it It is possible to have several gradient objects. 
+		 * Keep in mind that the number is gradients per color, ie the total number of colors available will be 
+		 * (colors-1)*gradients 
+		 * The last parameter, colorZero, is used to achieve high contrast between the two first colors so that 
+		 * a long gradient will look well also with binary algorithms*/
+		ArrayList<Color> colorList = new ArrayList<Color>();
+		colorList.add(Color.CYAN);
+		colorList.add(Color.WHITE);
+		colorList.add(Color.MAGENTA);
+		this.colorGradient = new ColorGradient(colorList, 9, Color.DARK_GRAY);
+		this.rainbow = new ColorGradient();
+		
+		if (LOOKANDFEEL.equals("System")) {
+			try {
+				UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+			} catch (ClassNotFoundException | InstantiationException
+					 | IllegalAccessException | UnsupportedLookAndFeelException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
 		this.eng = eng;
 		initialize();
 		initialiseGridOnScreen();
+		JFrame.setDefaultLookAndFeelDecorated(true);
 		frame.setVisible(true);
 	}
-
+	
 	/*
 	 * Initialise the contents of the frame.
 	 */
@@ -106,18 +145,23 @@ public class GUI {
 		gbc_label.gridx = 0;
 		gbc_label.gridy = 0;
 		algorithmsPanel.add(label, gbc_label);
-
+		
 		textField = new JTextField();
 		textField.setEditable(false);
 		textField.setHorizontalAlignment(SwingConstants.RIGHT);
+		textField.setBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null));
+		textField.setForeground(Color.LIGHT_GRAY);
+		textField.setBackground(Color.DARK_GRAY);
+		textField.setText("0.000");
+		textField.setToolTipText("Shows the computation time of higher generations.");
 		GridBagConstraints gbc_textField3 = new GridBagConstraints();
+		gbc_textField3.anchor = GridBagConstraints.EAST;
 		gbc_textField3.insets = new Insets(0, 0, 5, 0);
-		gbc_textField3.fill = GridBagConstraints.HORIZONTAL;
 		gbc_textField3.gridx = 1;
 		gbc_textField3.gridy = 0;
 		algorithmsPanel.add(textField, gbc_textField3);
 		textField.setColumns(10);
-
+		
 		JRadioButton rdbtnGameOfLife_2 = new JRadioButton("Game of Life // 2");
 		GridBagConstraints gbc_rdbtnGameOfLife = new GridBagConstraints();
 		gbc_rdbtnGameOfLife.fill = GridBagConstraints.BOTH;
@@ -126,13 +170,13 @@ public class GUI {
 		gbc_rdbtnGameOfLife.gridy = 1;
 		algorithmsPanel.add(rdbtnGameOfLife_2, gbc_rdbtnGameOfLife);
 
-		JRadioButton rdbtnGameOfLife_n = new JRadioButton("Game of Life // n");
+		JRadioButton rdbtnBrain_2 = new JRadioButton("Brain // 18");
 		GridBagConstraints gbc_rdbtnGameOfLife_1 = new GridBagConstraints();
 		gbc_rdbtnGameOfLife_1.fill = GridBagConstraints.BOTH;
 		gbc_rdbtnGameOfLife_1.insets = new Insets(0, 0, 5, 0);
 		gbc_rdbtnGameOfLife_1.gridx = 1;
 		gbc_rdbtnGameOfLife_1.gridy = 1;
-		algorithmsPanel.add(rdbtnGameOfLife_n, gbc_rdbtnGameOfLife_1);
+		algorithmsPanel.add(rdbtnBrain_2, gbc_rdbtnGameOfLife_1);
 
 		JRadioButton rdbtnLangtonsAnt_2 = new JRadioButton("Langton's Ant // 2");
 		GridBagConstraints gbc_rdbtnLangtonsAnt = new GridBagConstraints();
@@ -196,7 +240,7 @@ public class GUI {
 		 */
 		ButtonGroup algorithmGroup = new ButtonGroup();
 		algorithmGroup.add(rdbtnGameOfLife_2);
-		algorithmGroup.add(rdbtnGameOfLife_n);
+		algorithmGroup.add(rdbtnBrain_2);
 		algorithmGroup.add(rdbtnLangtonsAnt_2);
 		algorithmGroup.add(rdbtnLangtonsAnt_3);
 		algorithmGroup.add(rdbtnLangtonsAnt_4);
@@ -217,10 +261,9 @@ public class GUI {
 				changeAlgorithm(2, dimension, 16);
 			}
 		});
-		rdbtnGameOfLife_n.addActionListener(new ActionListener() {
+		rdbtnBrain_2.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				// once algorithm is proper for changeAlgorithm call, fill this
-				// in
+				changeAlgorithm(3, dimension, 18);
 			}
 		});
 		rdbtnLangtonsAnt_2.addActionListener(new ActionListener() {
@@ -248,16 +291,16 @@ public class GUI {
 		 */
 		JPanel playPauseStopPanel = new JPanel();
 		playPauseStopPanel.setBackground(Color.DARK_GRAY);
-		playPauseStopPanel.setBounds(10, 662, 274, 91);
+		playPauseStopPanel.setBounds(10, 672, 274, 81);
 		frame.getContentPane().add(playPauseStopPanel);
 		GridBagLayout gbl_panel_1 = new GridBagLayout();
 		gbl_panel_1.columnWidths = new int[] { 0, 0, 0, 0 };
 		gbl_panel_1.rowHeights = new int[] { 0, 0 };
 		gbl_panel_1.columnWeights = new double[] { 1.0, 1.0, 1.0,
-				Double.MIN_VALUE };
+			Double.MIN_VALUE };
 		gbl_panel_1.rowWeights = new double[] { 1.0, Double.MIN_VALUE };
 		playPauseStopPanel.setLayout(gbl_panel_1);
-
+		
 		/*
 		 * Initialises play/pause/stop buttons.
 		 */
@@ -334,6 +377,7 @@ public class GUI {
 				initialiseGridOnScreen();
 				generation = 0;
 				generationTF.setText(Integer.toString(generation));
+				slider.setValue(slider.getMaximum()/2);
 			}
 		});
 		/*
@@ -342,29 +386,29 @@ public class GUI {
 		playPauseStopPanel.add(btnPlay, gbc_btnPlay);
 		playPauseStopPanel.add(btnPause, gbc_btnPause);
 		playPauseStopPanel.add(btnStop, gbc_btnStop);
-
+		
 		/*
 		 * Everything to do with the speed slider.
 		 */
-		JSlider slider = new JSlider();
+		slider = new JSlider();
+		slider.setToolTipText("Changes the speed of the iterations through generations.");
 		slider.setMinimum(0);
-		slider.setMaximum(1000);
+		slider.setMaximum(100);
 		slider.setPaintTicks(true);
-		slider.setMajorTickSpacing(50);
-		slider.setInverted(true);
+		slider.setMajorTickSpacing(5);
 		slider.addChangeListener(new ChangeListener() {
 			public void stateChanged(ChangeEvent e) {
 				JSlider source = (JSlider) e.getSource();
 				if (!source.getValueIsAdjusting()) {
 					// Here's our code for what the slider does after not
 					// sliding anymore.
-					eng.setDelay(source.getValue());
+					eng.setDelay((int) (3000/Math.pow(1.08, (source.getValue()))));
 				}
 			}
 		});
 		slider.setBounds(304, 662, 620, 23);
 		frame.getContentPane().add(slider);
-
+		
 		/*
 		 * Panel for the properties such as colours, dimension, generation.
 		 */
@@ -436,17 +480,18 @@ public class GUI {
 		gbc_comboBox_1.gridx = 0;
 		gbc_comboBox_1.gridy = 1;
 		propertyPanel.add(colourSchemeCB, gbc_comboBox_1);
-
+		
 		/*
 		 * Text field for showing and changing the dimension of the shown grid.
 		 */
 		dimensionTF = new JTextField();
+		dimensionTF.setToolTipText("Change value to preferred dimension of the grid. \r\nRecommended <= 80 for HodgePodge.");
 		dimensionTF.setText(Integer.toString(dimension));
 		dimensionTF.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				int text = roundToBetterNumber(
-						Integer.parseInt(dimensionTF.getText()),
-						GRID_SIZE_IN_PIXELS);
+											   Integer.parseInt(dimensionTF.getText()),
+											   GRID_SIZE_IN_PIXELS);
 				dimensionTF.setText(Integer.toString(text));
 				// We stop our execution of engine:
 				eng.setShouldEngineRun(false);
@@ -471,30 +516,47 @@ public class GUI {
 			}
 		});
 		GridBagConstraints gbc_textField = new GridBagConstraints();
-		gbc_textField.fill = GridBagConstraints.VERTICAL;
-		gbc_textField.anchor = GridBagConstraints.EAST;
+		gbc_textField.anchor = GridBagConstraints.NORTHEAST;
 		gbc_textField.insets = new Insets(0, 0, 10, 5);
 		gbc_textField.gridx = 1;
 		gbc_textField.gridy = 1;
 		dimensionTF.setColumns(10);
 		dimensionTF.setHorizontalAlignment(JTextField.CENTER);
 		propertyPanel.add(dimensionTF, gbc_textField);
-
+		
 		/*
 		 * Text field for showing and changing the generation of the shown grid.
 		 */
 		generationTF = new JTextField();
+		generationTF.setToolTipText("Double-click to change the current generation. \r\nRecommended <10000 for non-Langton's-Ant algorithms.");
 		generationTF.setText(Integer.toString(generation));
 		generationTF.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				generation = Integer.parseInt(generationTF.getText());
-				eng.setShouldEngineRun(true);
-				eng.resume();
-				long start = System.currentTimeMillis();
-				eng.runEngine(generation);
-				long elapsedTimeMillis = System.currentTimeMillis() - start;
-				textField.setText(Double
-						.toString((double) elapsedTimeMillis / 1000));
+				int newGeneration = Integer.parseInt(generationTF.getText());
+				int oldGeneration = generation;
+				if (generation != newGeneration){
+					textField.setHorizontalAlignment(SwingConstants.LEFT);
+					textField.setText("Computing...");
+					textField.paintImmediately(textField.getVisibleRect()); 
+					generation = newGeneration;
+					long start = System.currentTimeMillis();
+					if (newGeneration < oldGeneration){
+						eng.setShouldEngineRun(false);
+						eng.suspend();
+						eng = new Engine(eng.getType(), dimension, eng.getNoOfColors());
+						eng.setGUI(GUI.this);
+						eng.setNewGrid(dimension);
+						removeGridFromScreen();
+						eng.runEngine(0);
+						initialiseGridOnScreen();
+					}
+					eng.setShouldEngineRun(true);
+					eng.resume();
+					eng.runEngine(generation);
+					long elapsedTimeMillis = System.currentTimeMillis() - start;
+					textField.setHorizontalAlignment(SwingConstants.RIGHT);
+					textField.setText(String.format(Locale.UK, "%.3f", ((double) elapsedTimeMillis / 1000)));
+				}
 			}
 		});
 		generationTF.addMouseListener(new MouseAdapter() {
@@ -508,53 +570,40 @@ public class GUI {
 		});
 		GridBagConstraints gbc_textField_1 = new GridBagConstraints();
 		gbc_textField_1.insets = new Insets(0, 0, 10, 0);
-		gbc_textField_1.fill = GridBagConstraints.VERTICAL;
-		gbc_textField_1.anchor = GridBagConstraints.EAST;
+		gbc_textField_1.anchor = GridBagConstraints.NORTHEAST;
 		gbc_textField_1.gridx = 2;
 		gbc_textField_1.gridy = 1;
 		generationTF.setColumns(10);
 		generationTF.setHorizontalAlignment(JTextField.RIGHT);
 		propertyPanel.add(generationTF, gbc_textField_1);
-
-		/*
-		 * This is the graphical grid, which visualises our (other) grid.
-		 */
-		/*
-		 * gGrid = new JTable(dimension, dimension);
-		 * gGrid.setBackground(Color.DARK_GRAY);
-		 * gGrid.setForeground(Color.LIGHT_GRAY);
-		 * gGrid.setDefaultRenderer(Object.class, new CellRenderer());
-		 * gGrid.setFocusable(false); gGrid.setRowSelectionAllowed(false);
-		 * gGrid.setBorder(new LineBorder(new Color(51, 51, 51)));
-		 * gGrid.setBounds(294, 11, (int) Math.floor(640/dimension) * dimension,
-		 * (int) Math.floor(640/dimension) * dimension);
-		 * gGrid.setRowHeight(640/dimension); gGrid.setEnabled(false);
-		 * gGrid.setGridColor(new Color(51, 51, 51)); TableColumnModel
-		 * columnModel = gGrid.getColumnModel(); for (int count =
-		 * gGrid.getColumnCount(), col = 0; col < count; col++){ TableColumn
-		 * column = columnModel.getColumn(col); column.setMinWidth(0); }
-		 * frame.getContentPane().add(gGrid);
-		 */
+		
+		progressBar = new JProgressBar();
+		progressBar.setToolTipText("Progress bar for higher generations.");
+		progressBar.setPreferredSize(new Dimension(146, 6));
+		progressBar.setBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null));
+		progressBar.setBackground(Color.DARK_GRAY);
+		progressBar.setBounds(13, 662, 268, 10);
+		frame.getContentPane().add(progressBar);
 	}
-
+	
 	// Getter method for giving grid's dimension:
 	// (May be invoked by "anyone")
 	public int getDimension() {
 		return dimension;
 	}
-
+	
 	// Method, that changes the dimension of the grid:
 	// (Invoked by GUI)
 	private void changeDimension(int dimension) {
 		this.dimension = dimension;
 		changeAlgorithm(eng.getType(), dimension, eng.getNoOfColors());
 	}
-
+	
 	private void removeGridFromScreen() {
 		frame.getContentPane().remove(graphicalG.gGrid);
 		frame.repaint();
 	}
-
+	
 	// Method, that brings the grid to the screen:
 	// (Invoked by GUI):
 	private void initialiseGridOnScreen() {
@@ -639,6 +688,8 @@ public class GUI {
 				ans = new Color(0x2FBAD6);
 		}
 		if (colorScheme == 3) {
+			ans = rainbow.getColor(c);
+			/*
 			if (c == 0)
 				ans = Color.DARK_GRAY;
 			if (c == 1)
@@ -673,16 +724,10 @@ public class GUI {
 				ans = new Color(0x1F1F1F);
 			if (c == 16)
 				ans = new Color(0x0F0F0F);
+				*/
 		}
 		if (colorScheme == 4) {
-			int bgcolor = Color.DARK_GRAY.getRGB();
-			int bggreen = Color.DARK_GRAY.getGreen();
-			int n = eng.getNoOfColors();
-			if (c > n || c < 0 || n < 2) {
-				return Color.RED; // Return red for anything outside the spectrum or
-									// an invalid spectrum
-			}
-			ans = new Color(bgcolor +(255-bggreen) / (n - 1) * c * 0x000100);
+			ans = colorGradient.getColor(c);
 		}
 		/*if (colorScheme == 4) {
 			if (c == 0)
@@ -723,6 +768,7 @@ public class GUI {
 		initialiseGridOnScreen();
 		generation = 0;
 		generationTF.setText(Integer.toString(generation));
+		slider.setValue(slider.getMaximum()/2);
 	}
 
 	public void plusOneGeneration() {
@@ -738,5 +784,13 @@ public class GUI {
 		});
 
 	}
-
+	
+	public void increaseProgressBar(){
+		if (progressBar.getValue() != 100){
+			progressBar.setValue(progressBar.getValue()+1);
+		} else{
+			progressBar.setValue(0);
+		}
+		progressBar.paintImmediately(progressBar.getVisibleRect());
+	}
 }
